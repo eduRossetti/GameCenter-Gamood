@@ -20,9 +20,9 @@
 ### Issue: Criar projeto Next.js base
 **Descrição:** Inicializar o projeto Next.js em JavaScript (sem TypeScript), usando o App Router.
 **Tarefas:**
-- [ ] Rodar `npx create-next-app@latest` com App Router e JavaScript
-- [ ] Remover boilerplate/CSS de exemplo desnecessário
-- [ ] Subir o servidor local com `npm run dev` e confirmar que carrega
+- [x] Rodar `npx create-next-app@latest` com App Router e JavaScript
+- [x] Remover boilerplate/CSS de exemplo desnecessário
+- [x] Subir o servidor local com `npm run dev` e confirmar que carrega
 **Critério de aceite:** Projeto sobe localmente na porta padrão sem erros.
 **Labels:** `milestone-0`, `setup`
 
@@ -55,10 +55,10 @@
 ### Issue: Estruturar pastas no padrão MVC
 **Descrição:** Organizar o projeto para separar claramente Views (rotas Next), Controllers (regras de negócio) e Models (acesso a dados).
 **Tarefas:**
-- [ ] Criar `src/controllers/`
-- [ ] Criar `src/models/`
-- [ ] Criar `src/components/` para componentes React reutilizáveis
-- [ ] Documentar a convenção no `README.md` (o que vai em cada pasta)
+- [x] Criar `src/controllers/`
+- [x] Criar `src/models/`
+- [x] Criar `src/components/` para componentes React reutilizáveis
+- [x] Documentar a convenção no `README.md` (o que vai em cada pasta)
 **Critério de aceite:** Estrutura de pastas criada e documentada no README.
 **Labels:** `milestone-0`, `setup`
 
