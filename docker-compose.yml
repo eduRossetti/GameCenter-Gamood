@@ -1,0 +1,22 @@
+
+services:
+  db:
+    image: postgres:15-alpine # Versão leve do postgres
+    container_name: gamood_db
+    restart: always # Mantém o banco sempre ativo localmente
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - gamood_pgdata:/var/lib/postgresql/data # Persistência de dados
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  gamood_pgdata: # Volume mapeado para não perder dados ao derrubar o container

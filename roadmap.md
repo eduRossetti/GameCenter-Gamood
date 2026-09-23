@@ -7,10 +7,10 @@
 | Camada          | Tecnologia                                 |
 |-----------------|----------------------------------------------|
 | Frontend        | Next.js + React (JavaScript)                 |
-| Backend         | Next.js (Server Actions / API Routes) — MVC  |
+| Framework       | Next.js (App Router)                         |
 | Banco de dados  | PostgreSQL (via Docker)                      |
-| Driver          | `pg` (node-postgres)                         |
-| Auth            | JWT ou cookie de sessão                      |
+| ORM             | Prisma                                       |
+| Estilização     | TailwindCSS                                  |
 
 ---
 
@@ -40,14 +40,16 @@
 
 ---
 
-### Issue: Configurar pool de conexão com `pg`
-**Descrição:** Criar o módulo central de acesso ao banco, que será importado por todos os Models.
+### Issue: Configurar Prisma Client
+**Descrição:** Instalar e configurar o Prisma ORM e criar o módulo central de acesso ao banco.
+
 **Tarefas:**
-- [ ] Instalar `pg`
-- [ ] Criar `.env` com `DATABASE_URL` (ou host/porta/usuário/senha separados)
-- [ ] Criar `src/lib/db.js` exportando um `Pool` configurado
-- [ ] Testar uma query simples (`SELECT NOW()`) a partir de uma rota de teste
-**Critério de aceite:** Uma chamada de teste retorna dado real do banco via o pool configurado.
+- [ ] Instalar `prisma` (dev) e `@prisma/client`
+- [ ] Inicializar o Prisma (`npx prisma init`) e configurar `.env` com `DATABASE_URL`
+- [ ] Criar `src/lib/prisma.js` exportando uma instância global do `PrismaClient` (prevenindo conexões múltiplas em dev)
+- [ ] Testar a conexão a partir de uma rota de teste
+
+**Critério de aceite:** O cliente do Prisma é instanciado corretamente e conecta ao banco de dados local.
 **Labels:** `milestone-0`, `backend`
 
 ---
@@ -64,55 +66,72 @@
 
 ---
 
-## 🏁 Milestone 1 — Modelagem do banco de dados
-**Descrição da Milestone:** Desenhar o schema relacional que sustenta todo o domínio: usuários, jogos, horários e reservas.
+## Milestone 1: Modelagem do Banco (Issues #5 a #9)
 
-### Issue: Criar tabela `users`
-**Descrição:** Tabela de usuários do sistema.
+**Objetivo:** Projetar e criar a modelagem do banco utilizando Prisma Schema e gerar migrações para um script de seed funcional.
+
+### Issue: Criar model `User` no Prisma
+**Descrição:** Definir a tabela de usuários do schema do Prisma.
+
 **Tarefas:**
-- [ ] Colunas: `id`, `name`, `email` (único), `password_hash`, `created_at`
-- [ ] Script SQL de criação em `migrations/`
-**Critério de aceite:** Tabela criada no banco via script versionado (não manualmente).
+- [ ] Criar model `User` em `prisma/schema.prisma`
+- [ ] Criar campos: `id` (UUID), `name`, `email`, `password_hash`, `role` (ADMIN, CUSTOMER), `created_at`
+- [ ] Gerar migration inicial (`npx prisma migrate dev --name init_user`)
+
+**Critério de aceite:** Tabela `User` existe no banco após rodar a migração.
 **Labels:** `milestone-1`, `database`
 
 ---
 
-### Issue: Criar tabela `games`
-**Descrição:** Catálogo de jogos disponíveis para aluguel.
+### Issue: Criar model `Game` no Prisma
+**Descrição:** Definir a tabela de jogos no schema do Prisma.
+
 **Tarefas:**
-- [ ] Colunas: `id`, `title`, `description`, `available` (boolean), `created_at`
-- [ ] Script SQL de criação
-**Critério de aceite:** Tabela criada e validada com um `INSERT` manual de teste.
+- [ ] Criar model `Game`
+- [ ] Criar campos: `id` (UUID), `title`, `description`, `duration_minutes`, `image_url`
+- [ ] Gerar migration (`npx prisma migrate dev --name add_game`)
+
+**Critério de aceite:** Tabela `Game` existe e pode receber inserts.
 **Labels:** `milestone-1`, `database`
 
 ---
 
-### Issue: Criar tabela `time_slots`
-**Descrição:** Horários disponíveis para jogar (ex: blocos de 1h).
+### Issue: Criar model `TimeSlot` no Prisma
+**Descrição:** Tabela para os blocos de horário disponíveis.
+
 **Tarefas:**
-- [ ] Colunas: `id`, `start_time`, `end_time`, `is_available` (boolean)
-- [ ] Script SQL de criação
-**Critério de aceite:** Tabela criada, aceitando horários futuros cadastrados manualmente.
+- [ ] Criar model `TimeSlot` e enum `SlotStatus` (AVAILABLE, BOOKED, UNAVAILABLE)
+- [ ] Criar campos: `id` (UUID), `start_time` (DateTime), `end_time` (DateTime), `status`
+- [ ] Gerar migration (`npx prisma migrate dev --name add_time_slots`)
+
+**Critério de aceite:** Tabela `TimeSlot` existe e `status` restrito aos valores do enum.
 **Labels:** `milestone-1`, `database`
 
 ---
 
-### Issue: Criar tabela `reservations`
-**Descrição:** Liga um usuário, um jogo e um horário — o núcleo do sistema.
+### Issue: Criar model `Reservation` no Prisma
+**Descrição:** Tabela de junção/reservas ligando Usuários, Jogos e Time Slots.
+
 **Tarefas:**
-- [ ] Colunas: `id`, `user_id` (FK), `game_id` (FK), `time_slot_id` (FK), `status`, `created_at`
-- [ ] Definir constraint de unicidade (não deixar dois usuários reservarem o mesmo `time_slot_id`)
-**Critério de aceite:** Tabela criada com as três foreign keys funcionando (`ON DELETE` definido).
+- [ ] Criar model `Reservation` e enum `ReservationStatus` (CONFIRMED, CANCELLED)
+- [ ] Criar campos: `id` (UUID), relações com `User`, `Game`, e `TimeSlot`, além de `status`
+- [ ] Adicionar `@unique` no `timeSlotId` para garantir que um slot não tenha reservas simultâneas
+- [ ] Gerar migration (`npx prisma migrate dev --name add_reservations`)
+
+**Critério de aceite:** Tabela `Reservation` criada com chaves estrangeiras funcionais e constraint de unicidade no banco.
 **Labels:** `milestone-1`, `database`
 
 ---
 
-### Issue: Script de seed
-**Descrição:** Popular o banco com dados de teste para desenvolvimento.
+### Issue: Script de seed no Prisma (prisma/seed.js)
+**Descrição:** Configurar script do Prisma executável para popular o banco.
+
 **Tarefas:**
-- [ ] Seed com 3-5 usuários, 5-10 jogos, 10+ horários
-- [ ] Rodar via `npm run seed` (script no `package.json`)
-**Critério de aceite:** Rodar o comando de seed deixa o banco pronto para testar toda a aplicação manualmente.
+- [ ] Configurar `"prisma": { "seed": "node prisma/seed.js" }` no `package.json`
+- [ ] Criar `prisma/seed.js` usando `PrismaClient` para criar registros mockados
+- [ ] Criar 1 admin, 1 usuário, 3 jogos, 5 time_slots e 1 reserva
+
+**Critério de aceite:** Rodar `npx prisma db seed` enche o banco corretamente com os relacionamentos batendo.
 **Labels:** `milestone-1`, `database`
 
 ---

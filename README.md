@@ -27,7 +27,7 @@ O projeto nasceu com o objetivo de criar uma solução robusta e escalável para
 
 - **Para o usuário/cliente:** Explorar o catálogo de jogos, consultar horários vagos, realizar reservas de forma simples e gerenciar seu histórico através de um painel pessoal.
 - **Para a administração:** Gerenciar o acervo de jogos, cadastrar e disponibilizar novos slots de horários e ter controle sobre reservas e cancelamentos.
-- **Foco técnico:** Implementação de arquitetura **MVC** adaptada ao ecossistema Next.js, modelagem relacional estrita com **PostgreSQL**, controle de concorrência com transações atômicas no banco e autenticação com cookies seguros.
+- **Foco técnico:** Implementação de arquitetura **MVC** adaptada ao ecossistema Next.js, modelagem relacional com **PostgreSQL** e **Prisma ORM**, controle de concorrência com transações e autenticação com cookies seguros.
 
 ---
 
@@ -55,7 +55,7 @@ O projeto nasceu com o objetivo de criar uma solução robusta e escalável para
 ### 📅 Sistema de Reservas (Core)
 
 - Fluxo guiado para seleção de jogo + horário.
-- **Prevenção de concorrência:** Uso de transações SQL (`BEGIN` / `COMMIT`) para garantir que dois usuários não reservem o mesmo slot simultaneamente.
+- **Prevenção de concorrência:** Uso de transações do Prisma (`$transaction`) para garantir que dois usuários não reservem o mesmo slot simultaneamente.
 - Cancelamento de reserva com restauração imediata da disponibilidade do slot.
 
 ### 👤 Painel do Usuário
@@ -73,17 +73,9 @@ O projeto nasceu com o objetivo de criar uma solução robusta e escalável para
 | **Frontend** | [Next.js](https://nextjs.org/) + [React](https://react.dev/) | Interface moderna utilizando App Router e Server/Client Components |
 | **Backend** | Next.js (Server Actions / Route Handlers) | Lógica de negócio e APIs seguindo padrão arquitetural MVC |
 | **Banco de Dados** | [PostgreSQL](https://www.postgresql.org/) | Banco de dados relacional com integridade referencial e transações ACID |
-| **Driver de Banco** | [pg (node-postgres)](https://node-postgres.com/) | Pool de conexões otimizado e queries SQL nativas |
+| **ORM** | [Prisma](https://www.prisma.io/) | Mapeamento objeto-relacional, tipagem forte e controle de migrações |
 | **Infraestrutura Local** | [Docker](https://www.docker.com/) + Docker Compose | Containerização do banco de dados para ambiente de desenvolvimento |
 | **Segurança** | `bcrypt` + `jsonwebtoken` | Hashing seguro de senhas e autenticação via cookies protegidos |
-| Camada                   | Tecnologia                                                   | Descrição                                                               |
-| ------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| **Frontend**             | [Next.js](https://nextjs.org/) + [React](https://react.dev/) | Interface moderna utilizando App Router e Server/Client Components      |
-| **Backend**              | Next.js (Server Actions / Route Handlers)                    | Lógica de negócio e APIs seguindo padrão arquitetural MVC               |
-| **Banco de Dados**       | [PostgreSQL](https://www.postgresql.org/)                    | Banco de dados relacional com integridade referencial e transações ACID |
-| **Driver de Banco**      | [pg (node-postgres)](https://node-postgres.com/)             | Pool de conexões otimizado e queries SQL nativas                        |
-| **Infraestrutura Local** | [Docker](https://www.docker.com/) + Docker Compose           | Containerização do banco de dados para ambiente de desenvolvimento      |
-| **Segurança**            | `bcrypt` + `jsonwebtoken`                                    | Hashing seguro de senhas e autenticação via cookies protegidos          |
 
 ---
 
@@ -106,9 +98,9 @@ O projeto adota o padrão **MVC (Model-View-Controller)** adaptado para o Next.j
                             ▼
 ┌─────────────────────────────────────────────────────────┐
 │                      Model Layer                        │
-│   src/models/ (Queries SQL, conexão e manipulação)      │
+│   src/models/ (Abstração e chamadas ao Prisma Client)   │
 └───────────────────────────┬─────────────────────────────┘
-                            │ Pool pg
+                            │ Prisma ORM
                             ▼
 ┌─────────────────────────────────────────────────────────┐
 │                 PostgreSQL Database                     │
@@ -121,11 +113,9 @@ O projeto adota o padrão **MVC (Model-View-Controller)** adaptado para o Next.j
 
 ```text
 GameCenter-Gamood/
-├── migrations/          # Scripts SQL de criação e versionamento de tabelas
-│   ├── 001_create_users.sql
-│   ├── 002_create_games.sql
-│   ├── 003_create_time_slots.sql
-│   └── 004_create_reservations.sql
+├── prisma/              # Schema do banco de dados e migrações do Prisma ORM
+│   ├── schema.prisma
+│   └── migrations/
 ├── public/              # Assets estáticos (imagens, ícones, logos)
 ├── src/
 │   ├── app/             # Rotas, layouts e views do Next.js (App Router)
@@ -133,8 +123,8 @@ GameCenter-Gamood/
 │   ├── controllers/     # Regras de negócio, validações e tratamento de erros
 │   ├── contexts/        # Contextos React (ex: AuthContext)
 │   ├── hooks/           # Custom hooks React (ex: useAuth)
-│   ├── lib/             # Módulos compartilhados (ex: db.js - Pool do pg)
-│   ├── models/          # Camada de acesso a dados e consultas SQL
+│   ├── lib/             # Módulos compartilhados (ex: prisma.js - Instância global do Prisma Client)
+│   ├── models/          # Camada de abstração de dados (Serviços/Repositórios)
 │   └── middleware.js    # Proteção de rotas autenticadas
 ├── docker-compose.yml   # Configuração do container PostgreSQL
 ├── package.json         # Dependências e scripts do projeto
@@ -144,15 +134,15 @@ GameCenter-Gamood/
 
 ### 📋 O que vai em cada pasta:
 
-- **`migrations/`**: Scripts SQL puros (DDL) numerados em ordem cronológica de execução. Responsáveis por criar, alterar e versionar tabelas, chaves estrangeiras e índices no PostgreSQL sem o uso de ORM.
+- **`prisma/`**: Contém o arquivo `schema.prisma` que define toda a modelagem do banco de dados e as configurações de conexão. O Prisma gerencia as migrações automaticamente através da subpasta `migrations/`.
 - **`public/`**: Arquivos estáticos que o Next.js serve diretamente na raiz do site (imagens, ícones, logos, banners).
 - **`src/app/` (View Layer)**: Rotas do Next.js no padrão App Router. Contém as páginas (`page.js`), layouts persistentes (`layout.js`) e estados de carregamento (`loading.js`). Focada apenas em apresentar a interface ao usuário e disparar ações para os controllers.
 - **`src/components/`**: Componentes visuais de interface (UI) reutilizáveis em múltiplas páginas (ex: botões personalizados, cards de exibição de jogos, badges de status, modais de confirmação). Devem ser agnósticos a regras de negócio.
 - **`src/controllers/` (Controller Layer)**: Regras de negócio da aplicação. É onde ficam as validações de entrada, formatação de dados, orquestração de chamadas aos Models e tratamento de erros antes de responder à View.
-- **`src/models/` (Model Layer)**: Camada de acesso direto ao banco de dados. Contém as funções que executam queries SQL nativas via pool do `pg` (SELECT, INSERT, UPDATE, DELETE e transações atômicas `BEGIN/COMMIT`). Não lida com requisições HTTP nem com interface.
+- **`src/models/` (Model Layer)**: Camada de abstração de banco de dados. Contém funções de serviço que encapsulam o uso do `PrismaClient` para realizar consultas, inserções e transações, mantendo as regras de acesso a dados isoladas dos Controllers.
 - **`src/contexts/`**: Provedores de estado global do React (ex: `AuthContext` para compartilhar dados do usuário logado entre componentes no client-side).
 - **`src/hooks/`**: Custom hooks React para abstrair e reutilizar lógica do lado do cliente (ex: `useAuth`, `useModal`).
-- **`src/lib/`**: Instâncias de bibliotecas e utilitários globais compartilhados, como o pool de conexão do PostgreSQL (`db.js`) e helpers auxiliares.
+- **`src/lib/`**: Instâncias de bibliotecas e utilitários globais compartilhados, como a instância única do Prisma Client (`prisma.js`) e helpers auxiliares.
 - **`src/middleware.js`**: Interceptador de requisições do Next.js. Executa antes de uma rota privada ser acessada para validar cookies de sessão/JWT e redirecionar usuários não autenticados.
 
 ---
@@ -209,13 +199,13 @@ docker compose up -d
 npm install
 ```
 
-### 5. Executar as migrations e seeds
+### 5. Configurar o banco com Prisma e rodar os seeds
 
-Inicialize as tabelas e popule com dados de teste:
+Inicialize as tabelas usando as migrações do Prisma e popule com dados de teste:
 
 ```bash
-npm run migrate
-npm run seed
+npx prisma migrate dev
+npx prisma db seed
 ```
 
 ### 6. Executar o servidor de desenvolvimento
@@ -278,8 +268,8 @@ erDiagram
 
 O ciclo de desenvolvimento do projeto está organizado em **8 Milestones** progressivas (para detalhes das tarefas e critérios de aceite, consulte o arquivo [`roadmap.md`](./roadmap.md)):
 
-- [ ] **Milestone 0: Fundação** — Setup do Next.js, container Docker PostgreSQL, pool `pg` e estrutura MVC.
-- [ ] **Milestone 1: Modelagem do Banco** — Schemas SQL, chaves estrangeiras, constraints e scripts de seed.
+- [ ] **Milestone 0: Fundação** — Setup do Next.js, container Docker PostgreSQL, Prisma ORM e estrutura MVC.
+- [ ] **Milestone 1: Modelagem do Banco** — Definição do `schema.prisma`, migrações e scripts de seed.
 - [ ] **Milestone 2: Autenticação** — Cadastro, login com hash `bcrypt`, sessões seguras e middleware de proteção.
 - [ ] **Milestone 3: CRUD de Jogos** — Catálogo de jogos, formulários de criação, edição e remoção.
 - [ ] **Milestone 4: CRUD de Horários** — Gerenciamento e listagem de blocos de horários livres e ocupados.
