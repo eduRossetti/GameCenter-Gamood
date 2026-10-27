@@ -185,33 +185,30 @@ DB_NAME=gamood
 JWT_SECRET=sua_chave_secreta_super_segura_aqui
 ```
 
-### 3. Iniciar o banco de dados via Docker
-
-Suba a instância do PostgreSQL:
-
-```bash
-docker compose up -d
-```
-
-### 4. Instalar as dependências
+### 3. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-### 5. Configurar o banco com Prisma e rodar os seeds
+### 4. Iniciar o banco e o servidor web
 
-Inicialize as tabelas usando as migrações do Prisma e popule com dados de teste:
+O comando aguarda o PostgreSQL ficar saudável, aplica as migrações pendentes e inicia o Next.js:
 
 ```bash
-npx prisma migrate dev
-npx prisma db seed
+npm run dev:stack
 ```
 
-### 6. Executar o servidor de desenvolvimento
+Para parar o banco e remover o container e a rede do Compose, preservando os dados:
 
 ```bash
-npm run dev
+npm run dev:stack:down
+```
+
+Para popular o banco manualmente com dados de teste, em outro terminal rode:
+
+```bash
+npx prisma db seed
 ```
 
 Abra [http://localhost:3000](http://localhost:3000) no seu navegador para visualizar a aplicação.

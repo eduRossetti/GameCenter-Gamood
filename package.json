@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "dev": "next dev",
+    "dev:stack": "docker compose --env-file .env -f infra/docker-compose.yml up -d --wait db && npx prisma migrate dev && npm run dev",
+    "dev:stack:down": "docker compose --env-file .env -f infra/docker-compose.yml down",
     "build": "next build",
     "start": "next start",
-    "db:console": "docker compose exec db psql -U postgres -d gamood"
+    "db:console": "docker compose --env-file .env -f infra/docker-compose.yml exec db psql -U postgres -d gamood"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
