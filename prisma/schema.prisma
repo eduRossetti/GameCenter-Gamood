@@ -22,3 +22,13 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model Game {
+  id               String   @id @default(uuid())
+  title            String
+  description      String?
+  duration_minutes Int
+  ImageUrl         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
