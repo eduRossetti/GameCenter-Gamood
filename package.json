@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:console": "docker exec -it gamood_db psql -U postgres -d gamood"
+    "db:console": "docker compose exec db psql -U postgres -d gamood"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

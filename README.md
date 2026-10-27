@@ -174,12 +174,12 @@ Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
 
 ```env
 # Banco de Dados
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/gamood_db
+DATABASE_URL=postgres://postgres:postgres@localhost:5434/gamood
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=5434
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_NAME=gamood_db
+DB_NAME=gamood
 
 # Autenticação
 JWT_SECRET=sua_chave_secreta_super_segura_aqui
